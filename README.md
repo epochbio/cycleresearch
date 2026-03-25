@@ -34,8 +34,10 @@ The agent maintains a live hypothesis list in `diary.md`, kills approaches that 
 
 ---
 
-## Important note
+## Important notes
 I find that this approach works best using frontier models in "thinking mode". As of March 2026 this is Claude Opus with the Max effort setting.
+
+Long context windows can consume credits quickly. It is usually better to restart sessions intermittently (and at the latest when you hit the Claude usage cap), rather than keeping one very long-running thread.
 
 ## Two ways to run
 
@@ -45,9 +47,12 @@ Open the repo you want to work on in VSCode with the official Claude Code extens
 
 You will need to change the model to "Claude Opus" and the effort to "Max" manually in the extension settings before starting the session, to get the best results.
 
+
 ### Option B — Command line with `--dangerously-skip-permissions` (fully autonomous)
 
 This lets the agent run without any interruption. **It must be run inside a Docker container — never directly on your machine.** When permissions are skipped, the agent can do anything a normal process can: delete files, overwrite code, install packages, and make network requests. Without a container, that means your entire home directory, SSH keys, credentials, and any mounted drives are in scope. A container limits the blast radius to just the repo folder, while still allowing the internet access the agent needs.
+
+**Security disclaimer:** this container setup reduces risk, but it is not 100% airtight. Container escapes and misconfiguration risks exist. Do your own research, validate the setup for your environment, and do not rely on this implementation alone as a complete safety boundary.
 
 #### Setup (one time)
 
@@ -98,11 +103,14 @@ cp /path/to/run_agent.sh .
 # Make sure the helper script is executable
 chmod +x run_agent.sh
 
-# Start the Docker-based autonomous session
+# First run only: log into Claude inside the container
+./run_agent.sh --login
+
+# After login completes, exit that Claude session, then re-run normally
 ./run_agent.sh
 ```
 
-That is it.
+On first use, `--login` is only for authentication. The actual autonomous run should be started without `--login`, because Claude should run with the normal flags from the script.
 
 What happens when you run `./run_agent.sh`:
 
