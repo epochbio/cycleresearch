@@ -35,7 +35,9 @@ The agent maintains a live hypothesis list in `diary.md`, kills approaches that 
 ---
 
 ## Important notes
-I find that this approach works best using frontier models in "thinking mode". As of March 2026 this is Claude Opus with the Max effort setting.
+Having a clear evaluation method is key for this approach to work. The agent needs a way to know if an experiment succeeded or failed, so it can update its hypotheses accordingly. This can be as simple as checking for a specific output values, optimising a benchmar, miniminising a loss, or passing a test case. The more specific and objective the evaluation criteria, the better the agent can learn from its experiments.
+
+I find that this approach works best using frontier models in "thinking mode". As of March 2026 this is Claude Opus with the Auto effort setting.
 
 Long context windows can consume credits quickly. It is usually better to restart sessions intermittently (and at the latest when you hit the Claude usage cap), rather than keeping one very long-running thread.
 
