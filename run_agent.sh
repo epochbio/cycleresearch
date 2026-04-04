@@ -12,6 +12,7 @@ docker volume create "$CONFIG_VOLUME" >/dev/null
 
 run_container() {
   docker run -it --rm \
+    --user "$(id -u):$(id -g)" \
     --init \
     -e CLAUDE_CONFIG_DIR=/home/claude/.claude \
     -e UV_LINK_MODE=copy \
@@ -30,7 +31,7 @@ case "$MODE" in
 
   run)
     echo "Starting autonomous session..."
-    run_container 'uv sync && exec claude --model opus --effort auto --dangerously-skip-permissions'
+    run_container 'uv sync && exec claude --model opus --effort max --dangerously-skip-permissions'
     ;;
 
   shell)
