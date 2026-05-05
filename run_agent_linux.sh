@@ -17,7 +17,8 @@ run_container() {
     -e CLAUDE_CONFIG_DIR=/home/claude/.claude \
     -e UV_LINK_MODE=copy \
     -v "$PWD":/workspace \
-    -v "$CONFIG_VOLUME":/home/claude/.claude \
+    -v "$HOME/.claude.json":/home/claude/.claude.json \
+    -v "$HOME/.claude":/home/claude/.claude \
     -w /workspace \
     "$IMAGE_NAME" \
     bash -lc "$1"
