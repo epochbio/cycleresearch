@@ -6,17 +6,19 @@ CONFIG_VOLUME="cycleresearch-claude-config"
 MODE="${1:-run}"
 
 echo "Building Docker image..."
-docker build -t "$IMAGE_NAME" .
+docker build -f Dockerfile.claude -t "$IMAGE_NAME" .
 
 docker volume create "$CONFIG_VOLUME" >/dev/null
 
 run_container() {
   docker run -it --rm \
+    --user "$(id -u):$(id -g)" \
     --init \
     -e CLAUDE_CONFIG_DIR=/home/claude/.claude \
     -e UV_LINK_MODE=copy \
     -v "$PWD":/workspace \
-    -v "$CONFIG_VOLUME":/home/claude/.claude \
+    -v "$HOME/.claude.json":/home/claude/.claude.json \
+    -v "$HOME/.claude":/home/claude/.claude \
     -w /workspace \
     "$IMAGE_NAME" \
     bash -lc "$1"
@@ -38,7 +40,7 @@ case "$MODE" in
     ;;
 
   *)
-    echo "Usage: ./run_agent.sh [login|run|shell]"
+    echo "Usage: ./run_claude_linux.sh [login|run|shell]"
     exit 1
     ;;
 esac

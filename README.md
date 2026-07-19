@@ -2,7 +2,7 @@
 
 Drop a few files into an existing repo, describe your problem, and let an AI agent work through it autonomously — running experiments, reasoning about results, and keeping a diary of what it tried.
 
-Inspired by [Karpathy's autoresearch](https://github.com/karpathy/autoresearch)  and [Donald Knuth's "Claudes Cycles"](https://www-cs-faculty.stanford.edu/~knuth/papers/claude-cycles.pdf): the idea of an idealized researcher cycling through hypotheses, experiments, and conclusions.
+Inspired by [Karpathy's autoresearch](https://github.com/karpathy/autoresearch) and [Donald Knuth's "Claude's Cycles"](https://www-cs-faculty.stanford.edu/~knuth/papers/claude-cycles.pdf): the idea of an idealized researcher cycling through hypotheses, experiments, and conclusions.
 
 ---
 
@@ -11,7 +11,7 @@ Inspired by [Karpathy's autoresearch](https://github.com/karpathy/autoresearch) 
 The agent follows a simple loop:
 
 1. Read `problem.md` and `diary.md`
-2. Choose a step — either an **experiment** (write and run code) or a **reasoning** (think something through in writing)
+2. Choose a step — either an **experiment** (write and run code) or a **reasoning** step (think something through in writing)
 3. Create a folder for that step under `steps/`
 4. Update `diary.md` before moving on
 5. Repeat until it reaches a conclusion or hits the step budget
@@ -24,118 +24,231 @@ The agent maintains a live hypothesis list in `diary.md`, kills approaches that 
 
 | File | Purpose |
 |---|---|
-| `CLAUDE.md` | Instructions the agent reads automatically |
+| `CLAUDE.md` | Instructions Claude Code reads automatically |
+| `AGENTS.md` | Instructions Codex reads automatically |
 | `problem.md` | Your problem — fill this in before starting |
 | `diary.md` | Running log of steps, findings, and hypotheses |
 | `pyproject.toml` | Python dependencies (`uv`) |
-| `Dockerfile` | Defines the Docker image for the agent |
-| `.dockerignore` | Files to ignore when building the Docker image |
-| `run_agent.sh` | Helper script to launch the Docker container and start the agent |
+| `Dockerfile.claude` | Defines the Docker image for Claude Code |
+| `Dockerfile.codex` | Defines the Docker image for Codex |
+| `.dockerignore` | Files to ignore when building either Docker image |
+| `run_claude_linux.sh` | Launches Claude Code in Docker on Linux |
+| `run_claude_mac.sh` | Launches Claude Code in Docker on macOS |
+| `run_codex_linux.sh` | Launches Codex in Docker on Linux |
 
 ---
 
 ## Important notes
-Having a clear evaluation method is key for this approach to work. The agent needs a way to know if an experiment succeeded or failed, so it can update its hypotheses accordingly. This can be as simple as checking for a specific output values, optimising a benchmar, miniminising a loss, or passing a test case. The more specific and objective the evaluation criteria, the better the agent can learn from its experiments.
 
-I find that this approach works best using frontier models in "thinking mode". As of March 2026 this is Claude Opus with the Auto effort setting.
+Having a clear evaluation method is key for this approach to work. The agent needs a way to know whether an experiment succeeded or failed so that it can update its hypotheses accordingly. This can be as simple as checking for specific output values, optimizing a benchmark, minimizing a loss, or passing a test case. The more specific and objective the evaluation criteria, the better the agent can learn from its experiments.
 
-Long context windows can consume credits quickly. It is usually better to restart sessions intermittently (and at the latest when you hit the Claude usage cap), rather than keeping one very long-running thread.
+This approach generally works best with a capable reasoning model and a clear, testable problem specification.
 
-## Two ways to run
+Long context windows can consume credits quickly. It is usually better to restart sessions intermittently rather than keeping one very long-running thread.
 
-### Option A — VSCode extension (easy, but interrupted)
+## Three ways to run
 
-Open the repo you want to work on in VSCode with the official Claude Code extension (and having logged into your Claude Pro account). Edit the `problem.md` file to describe your problem. Then start the agent in the dedicated chat UI. The agent will get working but will ask for approval on most actions. This is the safest and most supervised option — good for shorter sessions where you want to stay in the loop; but you cannot leave it running unattended because it will pause and wait for your input.
+### Option A — VS Code extension (easy, but interrupted)
 
-You will need to change the model to "Claude Opus" and the effort to "Max" manually in the extension settings before starting the session, to get the best results.
+Open the repo you want to work on in VS Code with the official Claude Code extension and log in to your Claude account. Edit `problem.md` to describe your problem, then start the agent in the dedicated chat UI.
 
+The agent will work through the task but will ask for approval on many actions. This is the safest and most supervised option, and is useful for shorter sessions where you want to stay in the loop. It is not suitable for unattended work because the agent may pause and wait for input.
 
-### Option B — Command line with `--dangerously-skip-permissions` (fully autonomous)
+Choose the desired Claude model and effort setting in the extension before starting.
 
-This lets the agent run without any interruption. **It must be run inside a Docker container — never directly on your machine.** When permissions are skipped, the agent can do anything a normal process can: delete files, overwrite code, install packages, and make network requests. Without a container, that means your entire home directory, SSH keys, credentials, and any mounted drives are in scope. A container limits the blast radius to just the repo folder, while still allowing the internet access the agent needs.
+### Option B — Claude Code in Docker (fully autonomous)
 
-**Security disclaimer:** this container setup reduces risk, but it is not 100% airtight. Container escapes and misconfiguration risks exist. Do your own research, validate the setup for your environment, and do not rely on this implementation alone as a complete safety boundary.
+This runs Claude Code with `--dangerously-skip-permissions`, allowing it to work without interruption. **Run this mode inside a Docker container, never directly on your machine.**
 
-#### Setup (one time)
+When permissions are skipped, the agent can do anything available to a normal process inside its environment: delete files, overwrite code, install packages, and make network requests. A container limits the exposed filesystem to the mounted project directory and any other resources you explicitly provide.
 
-**Linux:**
+### Option C — Codex in Docker (fully autonomous)
+
+The Codex launcher provides the equivalent autonomous workflow using a separate Docker image and a dedicated Codex configuration volume. The provided launcher currently targets Linux.
+
+Its `run` mode uses Codex's approval-and-sandbox bypass inside the container. Docker therefore acts as the outer safety boundary. The launcher also offers a `safe` mode that keeps Codex's workspace sandbox enabled while disabling approval prompts.
+
+### Security disclaimer
+
+These container setups reduce risk, but they are not perfect security boundaries. Container escapes and configuration mistakes are possible.
+
+Use a fresh clone or clean Git worktree, remove secrets such as `.env` files, and do not mount your Docker socket, SSH agent, home directory, cloud credentials, or unrelated files. The agent can freely modify everything inside the mounted repository.
+
+---
+
+## Docker setup
+
+### Linux
+
 ```bash
 sudo apt install docker.io
-sudo usermod -aG docker $USER
+sudo usermod -aG docker "$USER"
 # Log out and back in
 ```
 
-**Mac:**
+### macOS
+
 ```bash
-# Install Docker Desktop from https://www.docker.com/products/docker-desktop/
-# Or via Homebrew:
+# Install Docker Desktop from:
+# https://www.docker.com/products/docker-desktop/
+
+# Or install it with Homebrew:
 brew install --cask docker
-# Then launch Docker Desktop from Applications — it must be running before using docker commands
+
+# Launch Docker Desktop from Applications before using Docker commands.
 ```
 
-To check if Docker is installed and working, run:
+Check that Docker works:
+
 ```bash
 docker run hello-world
 ```
 
-That's it for setup. You only need to do this once.
+You only need to install Docker once.
 
-#### Per session
+---
 
-Clone a fresh copy specifically for the agent to work in — do not use your normal working copy. This way the agent has full access to your codebase, but any mistakes are isolated to the clone.
+## Prepare a working copy
 
-Next you will need to add the provided files into your repo. Copy `CLAUDE.md`, `problem.md`, `diary.md`, and `pyproject.toml` into the root of your repo. These govern how the agent behaves. Edit `problem.md` to describe your problem with as much detail as possible. Next add the files `Dockerfile`, `.dockerignore`, and `run_agent.sh` files as well. These define the Docker image (the environment the agent runs in) and a helper script to launch the container and start the agent.
-
+Clone a fresh copy specifically for the agent. Do not use your normal working copy.
 
 ```bash
-# Clone a fresh copy of your repo — the agent will work here, not on your original
 git clone <your-repo> your-repo-agent
 cd your-repo-agent
-rm -f .env   # remove any secrets before running
+rm -f .env
+```
 
-# Copy the necessary files into your repo
+Copy the research-loop files into the repository:
+
+```bash
 cp /path/to/CLAUDE.md .
+cp /path/to/AGENTS.md .
 cp /path/to/problem.md .
 cp /path/to/diary.md .
 cp /path/to/pyproject.toml .
-cp /path/to/Dockerfile .
 cp /path/to/.dockerignore .
-cp /path/to/run_agent.sh .
-
-# Make sure the helper script is executable
-chmod +x run_agent.sh
-
-# First run only: log into Claude inside the container
-./run_agent.sh --login
-
-# After login completes, exit that Claude session, then re-run normally
-./run_agent.sh
 ```
 
-On first use, `--login` is only for authentication. The actual autonomous run should be started without `--login`, because Claude should run with the normal flags from the script.
+Edit `problem.md` to describe the task as precisely as possible. Optionally set a step budget by editing the `BUDGET:` line at the top of `diary.md`.
 
-What happens when you run `./run_agent.sh`:
+---
 
-1. Docker builds the image defined in `Dockerfile`
-2. Docker starts a container with your repo mounted at `/workspace`
-3. Inside the container, the script runs `uv sync`
-4. Inside the container, the script launches:
+## Run with Claude Code
+
+Copy the Claude Dockerfile and the launcher for your operating system:
+
+### Linux
+
+```bash
+cp /path/to/Dockerfile.claude .
+cp /path/to/run_claude_linux.sh .
+chmod +x run_claude_linux.sh
+
+# First use: authenticate inside the container
+./run_claude_linux.sh login
+
+# Start an autonomous session
+./run_claude_linux.sh run
+```
+
+### macOS
+
+```bash
+cp /path/to/Dockerfile.claude .
+cp /path/to/run_claude_mac.sh .
+chmod +x run_claude_mac.sh
+
+# First use: authenticate inside the container
+./run_claude_mac.sh login
+
+# Start an autonomous session
+./run_claude_mac.sh run
+```
+
+You can also open a shell in the same container environment:
+
+```bash
+./run_claude_linux.sh shell
+# or:
+./run_claude_mac.sh shell
+```
+
+When the `run` mode starts:
+
+1. Docker builds the image from `Dockerfile.claude`
+2. Docker mounts the current repository at `/workspace`
+3. The container runs `uv sync`
+4. Claude Code starts with:
    ```bash
    claude --model opus --effort max --dangerously-skip-permissions
    ```
-5. The agent reads the instructions in `CLAUDE.md`, the problem in `problem.md`, and the diary in `diary.md` — then gets to work autonomously without asking for permission on any actions.
+5. Claude reads `CLAUDE.md`, `problem.md`, and `diary.md`, then works autonomously
 
-If you want to stop the session, quit Claude as normal. The container will then exit. Your repo files remain on your machine because the repo folder is mounted into the container.
+Quit Claude normally to stop the session. The container exits, while changes to the mounted repository remain on your machine.
 
-**Why this is safe:** the container can only see the repo folder you mounted into `/workspace`. It does not automatically have access to your home directory, SSH keys, or anything outside that folder. If the agent does something unexpected, the damage is limited to the clone.
+---
+
+## Run with Codex
+
+Copy the Codex Dockerfile and Linux launcher:
+
+```bash
+cp /path/to/Dockerfile.codex .
+cp /path/to/run_codex_linux.sh .
+chmod +x run_codex_linux.sh
+```
+
+Authenticate once:
+
+```bash
+./run_codex_linux.sh login
+```
+
+Start an interactive autonomous session:
+
+```bash
+./run_codex_linux.sh run
+```
+
+Run a single unattended task:
+
+```bash
+./run_codex_linux.sh exec \
+  'Implement the next task in problem.md, run the tests, and update diary.md.'
+```
+
+Optional safer mode, which retains Codex's workspace sandbox inside Docker:
+
+```bash
+./run_codex_linux.sh safe
+```
+
+The Codex launcher builds from `Dockerfile.codex`, mounts the current repository at `/workspace`, and stores Codex authentication in its own Docker volume rather than mounting your host Codex configuration.
 
 ---
 
 ## Quickstart
 
-1. Clone a fresh copy of the repo you want to work on for the agent
-2. Copy `CLAUDE.md`, `problem.md`, `diary.md`, and `pyproject.toml` into your repo
-3. Add `Dockerfile`, `.dockerignore`, and `run_agent.sh`
-4. Fill in `problem.md`
-5. Optionally set a step budget by editing the `BUDGET:` line at the top of `diary.md`
-6. Run `./run_agent.sh`
+### Claude Code on Linux
+
+```bash
+chmod +x run_claude_linux.sh
+./run_claude_linux.sh login
+./run_claude_linux.sh run
+```
+
+### Claude Code on macOS
+
+```bash
+chmod +x run_claude_mac.sh
+./run_claude_mac.sh login
+./run_claude_mac.sh run
+```
+
+### Codex on Linux
+
+```bash
+chmod +x run_codex_linux.sh
+./run_codex_linux.sh login
+./run_codex_linux.sh run
+```

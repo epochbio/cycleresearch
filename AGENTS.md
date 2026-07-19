@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 ## Non-negotiables
 1. Every research step gets its own folder under `steps/`.
