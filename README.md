@@ -35,6 +35,7 @@ The agent maintains a live hypothesis list in `diary.md`, kills approaches that 
 | `run_claude_linux.sh` | Launches Claude Code in Docker on Linux |
 | `run_claude_mac.sh` | Launches Claude Code in Docker on macOS |
 | `run_codex_linux.sh` | Launches Codex in Docker on Linux |
+| `run_codex_mac.sh` | Launches Codex in Docker on on macOS |
 
 ---
 
