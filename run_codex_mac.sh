@@ -80,7 +80,12 @@ case "$MODE" in
 
   run)
     echo "Starting autonomous Codex session..."
-    run_container 'uv sync && exec codex -C /workspace --config '\''projects={"/workspace"={trust_level="trusted"}}'\'' --dangerously-bypass-approvals-and-sandbox'
+    run_container 'uv sync && exec codex \
+      --model gpt-5.6-sol \
+      -C /workspace \
+      --ask-for-approval never \
+      --sandbox danger-full-access \
+      --config '\''projects={"/workspace"={trust_level="trusted"}}'\'''
     ;;
 
   shell)
