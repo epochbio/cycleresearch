@@ -21,7 +21,7 @@ run_container() {
     -v "$HOME/.claude":/home/claude/.claude \
     -w /workspace \
     "$IMAGE_NAME" \
-    bash -lc "$1"
+    bash -c "$1"
 }
 
 case "$MODE" in
