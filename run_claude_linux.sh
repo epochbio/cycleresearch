@@ -32,7 +32,7 @@ case "$MODE" in
 
   run)
     echo "Starting autonomous session..."
-    run_container 'uv sync && exec claude --model opus --effort max --dangerously-skip-permissions'
+    run_container 'uv sync && exec claude --model opus --effort xhigh --dangerously-skip-permissions'
     ;;
 
   shell)

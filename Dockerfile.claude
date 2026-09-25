@@ -23,7 +23,7 @@ USER claude
 WORKDIR /workspace
 
 # 3. Cache buster to force updates when needed
-ARG CLAUDE_UPDATE_DATE=2026-06-25-v2
+ARG CLAUDE_UPDATE_DATE=2026-09-25
 
 # 4. Install Claude directly into the claude user's home directory
 RUN curl -fsSL https://claude.ai/install.sh | bash
